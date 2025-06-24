@@ -1,0 +1,34 @@
+from sympy import symbols, Function, Matrix, diff, simplify
+
+# Define symbols, v_P is a function of p, k_R has subscript
+c, p, x3, gamma, k_R = symbols('c p x3 gamma k_R')
+v_P = Function('v_P')(p)
+
+# Define vector fields f and g
+f = Matrix([
+    v_P * (1 - c) - k_R * c * (1 - c - p) + gamma * c * p,
+    -v_P * p - gamma * p * (1 - p),
+    gamma * p - v_P
+])
+
+g = Matrix([
+    0,
+    k_R * c * (1 - c - p),
+    0
+])
+
+# Compute Jacobians of f and g with respect to (c, p, x3)
+vars_x = [c, p, x3]
+Df = f.jacobian(vars_x)
+Dg = g.jacobian(vars_x)
+
+# Compute the Lie bracket [f, g] = Dg*f - Df*g
+Lie_fg = Dg * f - Df * g
+
+# Compute [f, [f, g]] = D[f,g]*f - Df*[f,g]
+Dfg = Lie_fg.jacobian(vars_x)
+Lie_ffg = Dfg * f - Df * Lie_fg
+
+# Simplify the result
+Lie_ffg = simplify(Lie_ffg)
+Lie_ffg
