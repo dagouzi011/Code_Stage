@@ -106,3 +106,23 @@ plt.title('p* vs Light intensity')
 plt.grid(True)
 plt.tight_layout()
 plt.show()
+
+# Plot Trace with orange-yellow line
+plt.figure(figsize=(8, 6))
+plt.plot(I_values, trace_values, 'o-', linewidth=2, color='#FFA500')  # Orange-yellow color
+plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+plt.xlabel('Light intensity I')
+plt.ylabel('Trace')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# Plot Determinant with orange-yellow line
+plt.figure(figsize=(8, 6))
+plt.plot(I_values, det_values, 's-', linewidth=2, color='#FFA500')  # Orange-yellow color
+plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+plt.xlabel('Light intensity I')
+plt.ylabel('Determinant')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
