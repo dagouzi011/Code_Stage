@@ -1,0 +1,108 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from pyomo.environ import ConcreteModel, Var, Objective, Constraint, maximize, value
+from pyomo.opt import SolverFactory
+
+# Parameters
+kP = 1.6
+K = 140.0
+kR = 2.1
+k_gamma = 1e-5
+alpha = 2
+I_values = [10, 30, 50, 100, 200, 400, 600, 800, 1000]
+eps = 1e-6
+
+# Functions
+def v_P(p, I):
+    return kP * p * I / (K + p * I)
+
+def dv_P_dp(p, I):
+    return kP * I * K / (K + p * I) ** 2
+
+# Solver setup
+solver = SolverFactory('ipopt')
+solver.options['tol'] = 1e-6
+solver.options['max_iter'] = 3000
+solver.options['bound_push'] = 1e-6
+solver.options['mu_init'] = 1e-3
+solver.options['bound_relax_factor'] = 1e-6
+solver.options['print_level'] = 0
+
+# Initial guess
+prev_solution = {'c': 0.5, 'p': 0.3, 'u': 0.5}
+
+# Storage lists
+c_values, p_values, u_values, J_values, gamma_values = [], [], [], [], []
+
+# Loop over light intensities
+for I in I_values:
+    gamma = k_gamma * I ** alpha
+
+    model = ConcreteModel()
+    model.c = Var(bounds=(eps, 1 - eps), initialize=prev_solution['c'])
+    model.p = Var(bounds=(eps, 1 - eps), initialize=prev_solution['p'])
+    model.u = Var(bounds=(0, 1), initialize=prev_solution['u'])
+
+    model.obj = Objective(expr=v_P(model.p, I) - gamma * model.p, sense=maximize)
+
+    model.eq1 = Constraint(expr=v_P(model.p, I) * (1 - model.c) -
+                                kR * model.c * (1 - model.c - model.p) +
+                                gamma * model.c * model.p == 0)
+
+    model.eq2 = Constraint(expr=model.u * kR * model.c * (1 - model.c - model.p) -
+                                v_P(model.p, I) * model.p -
+                                gamma * model.p * (1 - model.p) == 0)
+
+    model.ineq = Constraint(expr=model.c + model.p <= 1 - eps)
+    model.c_min = Constraint(expr=model.c >= 1e-4)
+    model.p_min = Constraint(expr=model.p >= 1e-4)
+
+    result = solver.solve(model, tee=False)
+
+    c_val = value(model.c)
+    p_val = value(model.p)
+    u_val = value(model.u)
+    J_val = value(model.obj)
+
+    c_values.append(c_val)
+    p_values.append(p_val)
+    u_values.append(u_val)
+    J_values.append(J_val)
+    gamma_values.append(gamma)
+
+    prev_solution['c'] = c_val
+    prev_solution['p'] = p_val
+    prev_solution['u'] = u_val
+
+    print(f"I = {I}, gamma = {gamma:.6f}")
+    print(f"  c = {c_val:.6f}, p = {p_val:.6f}, u = {u_val:.6f}, J = {J_val:.6f}")
+
+    # Jacobian calculation
+    vp = v_P(p_val, I)
+    vp_prime = dv_P_dp(p_val, I)
+
+    J11 = -vp - kR * (1 - 2 * c_val - p_val) + gamma * p_val
+    J12 = vp_prime * (1 - c_val) + kR * c_val + gamma * c_val  # Corrected
+    J21 = u_val * kR * (1 - 2 * c_val - p_val)
+    J22 = -u_val * kR * c_val - vp_prime * p_val - vp - gamma * (1 - 2 * p_val)
+
+    trace = J11 + J22
+    det = J11 * J22 - J12 * J21
+
+    print(f"  Jacobian trace = {trace:.6f}, determinant = {det:.6f}")
+
+    if trace < 0 and det > 0:
+        print("  -> Locally stable")
+    else:
+        print("  -> Warning: stability not guaranteed")
+    print("-" * 40)
+
+# Plot steady-state p* vs light intensity
+plt.figure(figsize=(8, 6))
+plt.plot(I_values, p_values, 'o-', linewidth=2)
+plt.xlabel('Light intensity I')
+plt.ylabel('Steady-state p*')
+plt.title('p* vs Light intensity')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
