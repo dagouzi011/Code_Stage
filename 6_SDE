@@ -16,7 +16,7 @@ L = 50.0
 kR_bar = 1.5
 z_bar = 35.0
 n = 3
-σ = 0.05
+σ = 0.2
 tf = 100.0
 
 # ------------------ Biological Functions ------------------
@@ -97,20 +97,5 @@ plt2 = plot(times, u_vals, xlabel="Time (day)", ylabel="Control", label="u(t)", 
 plot!(plt2, times, v_vals, label="v(t)")
 display(plt2)
 
-# Identify prominent local maxima and minima of z(t)
-using StatsBase
-extrema_indices = findall(i -> (i > 1) && (i < length(z_vals)) && ((z_vals[i] > z_vals[i-1]) && (z_vals[i] > z_vals[i+1]) || (z_vals[i] < z_vals[i-1]) && (z_vals[i] < z_vals[i+1])), 1:length(z_vals))
-max_indices = filter(i -> (z_vals[i] > z_vals[i-1]) && (z_vals[i] > z_vals[i+1]), extrema_indices)
-min_indices = filter(i -> (z_vals[i] < z_vals[i-1]) && (z_vals[i] < z_vals[i+1]), extrema_indices)
-
-# Select first 4 local maxima and minima in time
-sorted_max_indices = max_indices[1:min(4, length(max_indices))]
-sorted_min_indices = min_indices[1:min(4, length(min_indices))]
-
 plt3 = plot(times, z_vals, xlabel="Time (day)", ylabel="Depth z (m)", title="z(t)", legend=false)
-scatter!(plt3, times[sorted_max_indices], z_vals[sorted_max_indices], label="Maxima", color=:red)
-scatter!(plt3, times[sorted_min_indices], z_vals[sorted_min_indices], label="Minima", color=:blue)
 display(plt3)
-
-println("First 4 local maxima of z(t) at times: ", times[sorted_max_indices])
-println("First 4 local minima of z(t) at times: ", times[sorted_min_indices])
