@@ -12,7 +12,7 @@ L = 50.0      # Max depth
 kR_bar = 1.5
 z_bar = 35.0
 n = 3
-tf = 25.0
+tf = 100.0
 
 # Functions
 function I_light(z)
@@ -31,11 +31,11 @@ end
 ocp = @def begin
     t ∈ [0, tf], time
     x = (c, p, z) ∈ R^3, state
-    U ∈ R^2, control  
+    U ∈ R^2, control  # 控制变量声明为向量
 
-    c(0) == 0.1
-    p(0) == 0.8
-    z(0) == 25.0
+    c(0) == 0.2
+    p(0) == 0.2
+    z(0) == 40.0
 
     0 ≤ U(t)[1] ≤ 1
     -1 ≤ U(t)[2] ≤ 1
@@ -68,7 +68,7 @@ sol = solve(ocp, :direct, :adnlp, :ipopt, init=sol8, grid_size=800, display=true
 # Plot
 plt = plot(sol)
 display(plt)
-savefig(plt, "w1.png")
+#savefig(plt, "02_02_25.png")
 
 # Extract solution details
 λ = costate(sol)
